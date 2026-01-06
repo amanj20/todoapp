@@ -533,7 +533,6 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-        // Progress bar (avoid Jinja inside CSS)
         const fill = document.querySelector(".progressFill");
         if (fill) {
           const pct = Number(fill.dataset.pct || 0);
@@ -541,7 +540,6 @@
           fill.style.width = safe + "%";
         }
 
-        // Edit/Cancel buttons (avoid Jinja inside onclick)
         document.querySelectorAll(".js-toggle-edit").forEach((btn) => {
           btn.addEventListener("click", () => toggleEdit(btn.dataset.id));
         });

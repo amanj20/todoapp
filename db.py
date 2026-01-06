@@ -14,7 +14,6 @@ def connect():
 
 def init_db():
     with connect() as conn:
-        # New installs: created_at has a default
         conn.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +23,6 @@ def init_db():
             )
         """)
 
-        # Migration for older DBs: add created_at without DEFAULT (SQLite limitation on ALTER)
         cols = [r["name"]
                 for r in conn.execute("PRAGMA table_info(tasks)").fetchall()]
         if "created_at" not in cols:

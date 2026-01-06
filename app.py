@@ -6,12 +6,11 @@ from db import init_db, connect
 MAX_TITLE_LEN = 120
 
 def create_app():
-    load_dotenv()  # loads .env if you create one later (optional)
+    load_dotenv()  
 
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-only-change-me")
 
-    # Initialize DB on startup (Flask 3 compatible)
     init_db()
 
     def _counts(conn):
@@ -54,7 +53,6 @@ def create_app():
             abort(400, "Invalid title")
 
         with connect() as conn:
-            # Ensure created_at is set even if DB was migrated without a DEFAULT
             conn.execute(
                 "INSERT INTO tasks(title, done, created_at) VALUES(?, ?, CURRENT_TIMESTAMP)",
                 (title, 0),
