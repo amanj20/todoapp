@@ -1,3 +1,4 @@
+[![CI-CD](https://github.com/amanj20/todoapp/actions/workflows/cicd.yml/badge.svg)](https://github.com/amanj20/todoapp/actions/workflows/cicd.yml)
 # todoapp
 
 A simple Flask To-Do List web application (CRUD) with basic DevSecOps practices:
