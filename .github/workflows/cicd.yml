@@ -1,0 +1,90 @@
+name: CI-CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/todo-app
+
+jobs:
+  test_and_security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Bandit (code security scan)
+        run: |
+          bandit -r . -x .venv,tests -f json -o bandit.json || true
+
+      - name: pip-audit (dependency vulnerability scan)
+        run: |
+          pip-audit -r requirements.txt -f json -o pip-audit.json || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit.json
+            pip-audit.json
+
+  build_push_and_scan_image:
+    needs: test_and_security
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' # IMPORTANT: only publish image on push to main
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Trivy scan Docker image (report)
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work aquasec/trivy:latest \
+            image --format json --output trivy.json --severity HIGH,CRITICAL \
+            ${{ env.IMAGE_NAME }}:${{ github.sha }} || true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy.json
