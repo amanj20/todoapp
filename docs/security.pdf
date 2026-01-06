@@ -1,0 +1,35 @@
+Project Security Overview
+This project is a Flask-based To-Do List application featuring a full CI/CD pipeline via GitHub Actions. While the app functions as a simple CRUD tool, the real focus is on security. We approached this from two angles: Application Security (how we wrote the code) and Pipeline Security (how we automated the safety checks).
+1. Building a Secure Application
+The first line of defense is writing code that defends itself. Here is how we handled the application logic and configuration:
+Trust No Input (Input Validation)
+Before any data touches the database, it goes through strict validation. I implemented controls to reject empty tasks, limit the length of input (to prevent buffer issues or UI breaking), and trim unnecessary whitespace.
+Why? Even with a secure database layer, valid input prevents application errors and ensures the data remains clean and predictable.
+Blocking SQL Injection
+We chose SQLite for the database, but we never concatenate user input directly into SQL strings. Instead, we use parameterized queries for every INSERT, UPDATE, or DELETE operation.
+Why? This is the industry standard. It treats user input strictly as data, not executable code, which effectively eliminates the risk of SQL injection attacks.
+Handling Secrets
+You won’t find any passwords or keys hardcoded in the source code. All configuration values (like SECRET_KEY or DATABASE_PATH) are pulled from environment variables.
+The Setup: we included a .env.example file to show what settings are needed, but the actual .env file is ignored by Git. This keeps credentials out of the repository.
+Operational Safety
+We avoided using the default Flask development server for the Docker container. Instead,we used Gunicorn, a production-grade WSGI server. This ensures the app handles requests reliably and minimizes runtime vulnerabilities.
+Future Plans: Authentication
+2. Securing the CI/CD Pipeline
+Human review isn't enough, so we automated security scanning using GitHub Actions. Every time code is pushed, three specific tools run to check for vulnerabilities.
+The Security Toolset
+Bandit: Scans the Python source code for insecure coding patterns.
+pip-audit: Checks my dependencies (requirements.txt) against a database of known vulnerabilities (CVEs).
+Trivy: Scans the final Docker image to find issues in the OS packages or libraries.
+Reviewing the Results
+Rather than cluttering the build logs, these tools generate JSON reports (bandit.json, trivy.json, etc.) which are uploaded as GitHub Artifacts.
+How to see them: You can go to the "Actions" tab in the repo, click the latest run, and download the reports to see exactly what was found.
+Fixing Issues
+When the scanners find something, I follow a simple remediation process:
+Code Issues: Fix the bad pattern (e.g., weak random number generation) and add a test case.
+Dependencies: Bump the version in requirements.txt to a patched release.
+Container Issues: Update the base image to grab the latest OS security patches.
+Note: For this project, we often set the scanners to "report-only" mode. This allows the build to finish even if findings exist, giving us a chance to review and learn from the reports.
+Pipeline Permissions
+Finally, we locked down the pipeline's access. The workflow uses the default GITHUB_TOKEN with Least Privilege permissions. It can read the code and push packages to the registry, but nothing else. This limits the blast radius if the token were ever compromised.
+Summary
+The security strategy for this project relies on defense in depth. By combining defensive coding (input validation, parameterized queries) with automated auditing tools (Bandit, Trivy), and ensuring secrets are never committed to version control, the application is robust against common web attacks and deployment risks.
