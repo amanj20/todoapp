@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Secure To-Do</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 720px;
+        margin: 40px auto;
+      }
+      .done {
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 8px 0;
+      }
+      form {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Secure To-Do</h1>
+
+    <form method="post" action="/tasks">
+      <input name="title" placeholder="New task..." maxlength="120" required />
+      <button type="submit">Add</button>
+    </form>
+
+    <hr />
+
+    {% for t in tasks %}
+    <div class="row">
+      <div class="{{ 'done' if t.done else '' }}">{{ t.title }}</div>
+
+      <form method="post" action="/tasks/{{t.id}}/toggle">
+        <button type="submit">{{ 'Undo' if t.done else 'Done' }}</button>
+      </form>
+
+      <form
+        method="post"
+        action="/tasks/{{t.id}}/delete"
+        onsubmit="return confirm('Delete?');"
+      >
+        <button type="submit">Delete</button>
+      </form>
+    </div>
+    {% else %}
+    <p>No tasks yet.</p>
+    {% endfor %}
+  </body>
+</html>
